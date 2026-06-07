@@ -3,12 +3,12 @@ import json
 import os
 
 st.set_page_config(
-    page_title="Oyun Onerileri",
+    page_title="Oyunlar",
     page_icon="🎮",
     layout="wide"
 )
 
-DATA_FILE = 'games_v1.json'
+DATA_FILE = 'games_v2.json'
 
 def safe_rerun():
     if hasattr(st, "rerun"):
@@ -18,7 +18,9 @@ def safe_rerun():
 
 def load_data():
     empty_db = {
-        "users": {"admin": "123456"},
+        "users": {
+            "admin": "123456"
+        },
         "games": []
     }
     if not os.path.exists(DATA_FILE):
@@ -35,7 +37,12 @@ def load_data():
 def save_data(data):
     try:
         with open(DATA_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
+            json.dump(
+                data, 
+                f, 
+                indent=4, 
+                ensure_ascii=False
+            )
     except Exception as e:
         st.error(f"Hata: {e}")
 
@@ -49,13 +56,19 @@ db = load_data()
 # --- GIRIS VE KAYIT ---
 if not st.session_state.logged_in:
     st.title("🎮 Oyun Oneri Platformu")
-    t_login, t_reg = st.tabs(["Giris Yap", "Kayit Ol"])
+    t_login, t_reg = st.tabs(
+        ["Giris Yap", "Kayit Ol"]
+    )
     
     with t_login:
         with st.form("l_form"):
             u = st.text_input("Kullanici Adi").strip()
             p = st.text_input("Sifre", type="password").strip()
-            if st.form_submit_button("Giris", use_container_width=True):
+            btn_l = st.form_submit_button(
+                "Giris", 
+                use_container_width=True
+            )
+            if btn_l:
                 if u in db["users"] and db["users"][u] == p:
                     st.session_state.logged_in = True
                     st.session_state.username = u
@@ -67,7 +80,11 @@ if not st.session_state.logged_in:
         with st.form("r_form"):
             ru = st.text_input("Yeni Kullanici Adi").strip()
             rp = st.text_input("Yeni Sifre", type="password").strip()
-            if st.form_submit_button("Kayit Ol", use_container_width=True):
+            btn_r = st.form_submit_button(
+                "Kayit Ol", 
+                use_container_width=True
+            )
+            if btn_r:
                 if not ru or not rp:
                     st.error("Bos birakmayiniz!")
                 elif ru in db["users"] or ru.lower() == "admin":
@@ -75,13 +92,17 @@ if not st.session_state.logged_in:
                 else:
                     db["users"][ru] = rp
                     save_data(db)
-                    st.success("Kayit basarili! Giris yapabilirsiniz.")
+                    st.success("Kayit basarili!")
     st.stop()
 
 # --- UST PANEL ---
 c_t1, c_t2 = st.columns([9, 1])
 with c_t2:
-    if st.button("Cikis 🚪", use_container_width=True):
+    btn_out = st.button(
+        "Cikis 🚪", 
+        use_container_width=True
+    )
+    if btn_out:
         st.session_state.logged_in = False
         st.session_state.username = ""
         safe_rerun()
@@ -97,21 +118,3 @@ with col1:
     st.subheader("➕ Yeni Oyun Oner")
     with st.form("add_game_form", clear_on_submit=True):
         g_name = st.text_input("Oyun Adi")
-        g_plat = st.text_input("Platform (Oren: Steam, Epic)")
-        g_link = st.text_input("Magaza / Steam Linki")
-        g_price = st.text_input("Fiyati (Oren: Free, 15$, 500 TL)")
-        g_rate = st.slider("Oynanirlik Durumu (Puan)", 1, 10, 8)
-        g_note = st.text_area("Oyun Hakkindaki Notun / Incelemesi")
-        
-        if st.form_submit_button("Oneriyi Paylas", use_container_width=True):
-            if g_name and g_link:
-                db["games"].append({
-                    "name": g_name,
-                    "platform": g_plat if g_plat else "Steam",
-                    "link": g_link,
-                    "price": g_price if g_price else "Belirtilmedi",
-                    "rating": g_rate,
-                    "note": g_note if g_note else "Not eklenmedi.",
-                    "by": st.session_state.username
-                })
-                save_data(db
