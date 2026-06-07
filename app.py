@@ -3,26 +3,40 @@ import json
 import os
 from datetime import datetime
 
-# Sayfa Ayarları (Geniş ekran ve koyu tema uyumu için)
+# Sayfa Ayarları
 st.set_page_config(page_title="Admin - Oyun Hesap Yönetimi", page_icon="🔐", layout="wide")
 
-# Verilerin kaydedileceği JSON dosyaları
+# Sabit Dosya Yolları
 DATA_FILE = 'accounts.json'
 LOG_FILE = 'system_logs.json'
 
-# --- YARDIMCI FONKSİYONLAR ---
+# --- YENİDEN YÜKLEME (RERUN) UYUMLULUK FONKSİYONU ---
+def safe_rerun():
+    """Her Streamlit sürümünde hatasız çalışacak rerun fonksiyonu"""
+    if hasattr(st, "rerun"):
+        st.rerun()
+    elif hasattr(st, "experimental_rerun"):
+        st.experimental_rerun()
+
+# --- VERİ TABANI (JSON) FONKSİYONLARI ---
 def load_data(file_path):
     if not os.path.exists(file_path):
         return []
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except:
+            content = f.read().strip()
+            if not content:
+                return []
+            return json.loads(content)
+    except Exception:
         return []
 
 def save_data(file_path, data):
-    with open(file_path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
+    try:
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+    except Exception as e:
+        st.error(f"Veri kaydedilirken hata oluştu: {e}")
 
 def add_log(action, status, details=""):
     logs = load_data(LOG_FILE)
@@ -32,58 +46,56 @@ def add_log(action, status, details=""):
         "status": status,
         "details": details
     }
-    logs.insert(0, log_entry)  # En yeni logu en üste ekle
+    logs.insert(0, log_entry)
     save_data(LOG_FILE, logs)
 
-# --- OTURUM KONTROLÜ (Giriş Paneli) ---
+# --- OTURUM YÖNETİMİ ---
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
-# Giriş Bilgileri (Burayı dilediğin gibi değiştirebilirsin)
+# Giriş Bilgileri
 ADMIN_USER = "admin"
-ADMIN_PASS = "123456" 
+ADMIN_PASS = "123456"
 
+# --- 1. GİRİŞ PANELİ ---
 if not st.session_state.logged_in:
-    # Giriş Ekranı Arayüzü
     st.markdown("<br><h2 style='text-align: center;'>🔐 Oyun Hesap Yönetimi - Giriş Paneli</h2>", unsafe_allow_html=True)
     
-    col_space1, col_login, col_space2 = st.columns([1, 1, 1])
+    _, col_login, _ = st.columns([1, 1, 1])
     with col_login:
         with st.form("login_form"):
-            username = st.text_input("Kullanıcı Adı")
-            password = st.text_input("Şifre", type="password")
+            username = st.text_input("Kullanıcı Adı", key="login_username")
+            password = st.text_input("Şifre", type="password", key="login_password")
             login_btn = st.form_submit_button("Giriş Yap", use_container_width=True)
             
             if login_btn:
                 if username == ADMIN_USER and password == ADMIN_PASS:
                     st.session_state.logged_in = True
-                    add_log("Kullanıcı Girişi", "BAŞARILI", f"'{username}' başarıyla giriş yaptı.")
+                    add_log("Kullanıcı Girişi", "BAŞARILI", f"'{username}' giriş yaptı.")
                     st.success("Giriş başarılı! Yönlendiriliyorsunuz...")
-                    st.rerun()
+                    safe_rerun()
                 else:
-                    add_log("Kullanıcı Girişi", "HATALI", f"'{username}' kullanıcı adı ile hatalı deneme yapıldı.")
+                    add_log("Kullanıcı Girişi", "HATALI", f"'{username}' ile hatalı deneme.")
                     st.error("Hatalı kullanıcı adı veya şifre!")
-    st.stop() # Giriş yapılmadıysa sayfanın devamını gösterme
+    st.stop()
 
-# --- ADMIN PANELİ (Giriş Yapıldıktan Sonra) ---
+# --- 2. ADMIN PANELİ (Giriş Yapılınca Çalışacak Kısım) ---
 
-# Çıkış Butonu (Sağ Üst Köşe)
+# Çıkış Butonu
 top_col1, top_col2 = st.columns([9, 1])
 with top_col2:
     if st.button("Çıkış Yap 🚪", use_container_width=True):
         st.session_state.logged_in = False
-        add_log("Kullanıcı Çıkışı", "BAŞARILI", "Oturum sonlandırıldı.")
-        st.rerun()
+        add_log("Kullanıcı Çıkışı", "BAŞARILI", "Oturum kapatıldı.")
+        safe_rerun()
 
 with top_col1:
     st.title("🛡️ Admin Kontrol Paneli")
 
-# Sekmeli Menü Yapısı
 tab_accounts, tab_logs = st.tabs(["🎮 Hesap Yönetimi", "📋 Sistem Logları"])
-
 accounts = load_data(DATA_FILE)
 
-# --- 1. SEKME: HESAP YÖNETİMİ ---
+# --- HESAP YÖNETİMİ SEKME ---
 with tab_accounts:
     col1, col2 = st.columns([1, 2])
 
@@ -109,10 +121,22 @@ with tab_accounts:
                     }
                     accounts.append(new_account)
                     save_data(DATA_FILE, accounts)
-                    add_log("Hesap Ekleme", "BAŞARILI", f"{platform} platformuna ait '{username}' hesabı eklendi.")
-                    st.success("Hesap kaydedildi!")
-                    st.rerun()
+                    add_log("Hesap Ekleme", "BAŞARILI", f"{platform} - '{username}' eklendi.")
+                    st.success("Hesap başarıyla kaydedildi!")
+                    safe_rerun()
                 else:
-                    st.error("Lütfen gerekli alanları doldurun!")
+                    st.error("Lütfen tüm alanları doldurun!")
 
     with col2:
+        st.subheader("📋 Kayıtlı Hesaplar")
+        if not accounts:
+            st.info("Henüz hiç hesap eklenmemiş.")
+        else:
+            for idx, acc in enumerate(accounts):
+                with st.expander(f"🔑 {acc['platform']} - {acc['username']}"):
+                    st.write(f"**Oyunlar:** {acc['games']}")
+                    st.write(f"**Kullanıcı Adı:** `{acc['username']}`")
+                    
+                    # Şifre Göster/Gizle mekanizması
+                    show_pass = st.checkbox("Şifreyi Göster
+                
