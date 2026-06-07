@@ -108,7 +108,23 @@ with tab_accounts:
             
             if submit_btn:
                 if platform and username and password and code_link:
+                 if platform and username and password and code_link:
                     new_acc = {
+                        "platform": platform,
+                        "username": username,
+                        "password": password,
+                        "games": games,
+                        "code_link": code_link
+                    }
+                    accounts.append(new_acc)
+                    save_data(DATA_FILE, accounts)
+                    add_log("Ekleme", "BASARILI", f"{platform} eklendi.")
+                    st.success("Kaydedildi!")
+                    safe_rerun()
+                else:
+                    st.error("Eksik alan birakmayin!")
+                 
+             
                         "platform": platform,
                         "username": username,
                         "password": password,
