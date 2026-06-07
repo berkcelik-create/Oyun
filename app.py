@@ -3,10 +3,10 @@ import json
 import os
 from datetime import datetime
 
-# Sayfa Ayarları
+# Sayfa Ayarları (Geniş ekran ve koyu tema uyumu için)
 st.set_page_config(page_title="Admin - Oyun Hesap Yönetimi", page_icon="🔐", layout="wide")
 
-# Sabit Dosya Yolları
+# Verilerin kaydedileceği JSON dosyaları
 DATA_FILE = 'accounts.json'
 LOG_FILE = 'system_logs.json'
 
@@ -39,14 +39,13 @@ def add_log(action, status, details=""):
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
-# Belirlemek istediğin Admin Giriş Bilgileri
-# NOT: GitHub'a yükleyeceksen bu şifreyi kimseyle paylaşma!
+# Giriş Bilgileri (Burayı dilediğin gibi değiştirebilirsin)
 ADMIN_USER = "admin"
-ADMIN_PASS = "123456" # Burayı dilediğin gibi değiştir
+ADMIN_PASS = "123456" 
 
 if not st.session_state.logged_in:
     # Giriş Ekranı Arayüzü
-    st.markdown("<h2 style='text-align: center;'>🔐 Oyun Hesap Yönetimi - Giriş Paneli</h2>", unsafe_allow_html=True)
+    st.markdown("<br><h2 style='text-align: center;'>🔐 Oyun Hesap Yönetimi - Giriş Paneli</h2>", unsafe_allow_html=True)
     
     col_space1, col_login, col_space2 = st.columns([1, 1, 1])
     with col_login:
@@ -64,7 +63,7 @@ if not st.session_state.logged_in:
                 else:
                     add_log("Kullanıcı Girişi", "HATALI", f"'{username}' kullanıcı adı ile hatalı deneme yapıldı.")
                     st.error("Hatalı kullanıcı adı veya şifre!")
-    st.stop() # Kullanıcı giriş yapmadıysa sayfanın geri kalanını yükleme
+    st.stop() # Giriş yapılmadıysa sayfanın devamını gösterme
 
 # --- ADMIN PANELİ (Giriş Yapıldıktan Sonra) ---
 
@@ -79,7 +78,7 @@ with top_col2:
 with top_col1:
     st.title("🛡️ Admin Kontrol Paneli")
 
-# Sekmeli Menü Yapısı (Hesaplar ve Loglar için)
+# Sekmeli Menü Yapısı
 tab_accounts, tab_logs = st.tabs(["🎮 Hesap Yönetimi", "📋 Sistem Logları"])
 
 accounts = load_data(DATA_FILE)
@@ -97,4 +96,23 @@ with tab_accounts:
             games = st.text_input("İçindeki Oyunlar", placeholder="Örn: Valorant, LoL")
             code_link = st.text_input("Kod Alınacak Sitenin Linki", placeholder="https://...")
             
-            submit_btn = st.form_submit_button("Hes
+            submit_btn = st.form_submit_button("Hesabı Kaydet", use_container_width=True)
+            
+            if submit_btn:
+                if platform and username and password and code_link:
+                    new_account = {
+                        "platform": platform,
+                        "username": username,
+                        "password": password,
+                        "games": games,
+                        "code_link": code_link
+                    }
+                    accounts.append(new_account)
+                    save_data(DATA_FILE, accounts)
+                    add_log("Hesap Ekleme", "BAŞARILI", f"{platform} platformuna ait '{username}' hesabı eklendi.")
+                    st.success("Hesap kaydedildi!")
+                    st.rerun()
+                else:
+                    st.error("Lütfen gerekli alanları doldurun!")
+
+    with col2:
