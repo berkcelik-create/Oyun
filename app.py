@@ -36,7 +36,7 @@ def save_data(file_path, data):
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
     except Exception as e:
-        st.error(f"Hata: {e}")
+        st.error(f"Hta: {e}")
 
 def add_log(action, status, details=""):
     logs = load_data(LOG_FILE)
@@ -108,7 +108,6 @@ with tab_accounts:
             
             if submit_btn:
                 if platform and username and password and code_link:
-                 if platform and username and password and code_link:
                     new_acc = {
                         "platform": platform,
                         "username": username,
@@ -123,9 +122,34 @@ with tab_accounts:
                     safe_rerun()
                 else:
                     st.error("Eksik alan birakmayin!")
-                 
-             
-                        "platform": platform,
-                        "username": username,
-                        "password": password,
-                        "games": games,
+
+    with col2:
+        st.subheader("📋 Kayitli Hesaplar")
+        if not accounts:
+            st.info("Henuz hesap yok.")
+        else:
+            for idx, acc in enumerate(accounts):
+                with st.expander(f"🔑 {acc['platform']} - {acc['username']}"):
+                    st.write(f"**Oyunlar:** {acc['games']}")
+                    st.write(f"**Kullanici:** `{acc['username']}`")
+                    
+                    show_pass = st.checkbox(
+                        label="Sifreyi Goster", 
+                        key=f"sp_{idx}"
+                    )
+                    
+                    if show_pass:
+                        st.write(f"**Sifre:** `{acc['password']}`")
+                    else:
+                        st.write("**Sifre:** `••••••••`")
+                    
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    btn_col1, btn_col2 = st.columns([1, 1])
+                    with btn_col1:
+                        st.link_button("Koda Git ↗", acc['code_link'], type="primary", use_container_width=True)
+                    with btn_col2:
+                        if st.button("Sil 🗑️", key=f"del_{idx}", use_container_width=True):
+                            accounts.pop(idx)
+                            save_data(DATA_FILE, accounts)
+                            add_log("Silme", "BASARILI", f"{acc['platform']} silindi.")
+                            st.success
