@@ -2,13 +2,9 @@ import streamlit as st
 import json
 import os
 
-st.set_page_config(
-    page_title="Hesap Yonetimi",
-    page_icon="🎮",
-    layout="wide"
-)
+st.set_page_config(page_title="Hesaplar", page_icon="🎮", layout="wide")
 
-DATA_FILE = 'accounts_v2.json'
+DATA_FILE = 'accounts_v3.json'
 
 def safe_rerun():
     if hasattr(st, "rerun"):
@@ -27,9 +23,7 @@ def load_all_data():
     try:
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
             content = f.read().strip()
-            if not content:
-                return empty_db
-            return json.loads(content)
+            return json.loads(content) if content else empty_db
     except Exception:
         return empty_db
 
@@ -77,10 +71,10 @@ if not st.session_state.logged_in:
                 else:
                     db["users"][ru] = rp
                     save_all_data(db)
-                    st.success("Kayit basarili! Giris yapabilirsiniz.")
+                    st.success("Kayit basarili!")
     st.stop()
 
-# --- PANEL BASLIGI ---
+# --- UST PANEL ---
 c_t1, c_t2 = st.columns([9, 1])
 with c_t2:
     if st.button("Cikis 🚪", use_container_width=True):
@@ -90,9 +84,9 @@ with c_t2:
 
 is_admin = (st.session_state.username == "admin")
 with c_t1:
-    st.title(f"🛡️ Admin Paneli" if is_admin else f"🎮 Hos geldin, {st.session_state.username}")
+    st.title(f"🛡️ Admin" if is_admin else f"🎮 {st.session_state.username}")
 
-# --- ADMIN GORUNUMU ---
+# --- ADMIN PANELI ---
 if is_admin:
     t_onayli, t_bekleyen = st.tabs(["Onayli Hesaplar", "Onay Bekleyenler"])
     
@@ -101,38 +95,5 @@ if is_admin:
             st.info("Sistemde aktif hesap yok.")
         else:
             for idx, acc in enumerate(db["approved_accounts"]):
-                title = f"{acc['platform']} - {acc['username']}"
-                with st.expander(title):
-                    st.write(f"**Oyunlar:** {acc['games']}")
-                    st.write(f"**Kullanici:** `{acc['username']}`")
-                    if st.checkbox("Sifreyi Goster", key=f"ap_sp_{idx}"):
-                        st.write(f"**Sifre:** `{acc['password']}`")
-                    else:
-                        st.write("**Sifre:** `••••••••`")
-                    
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    b1, b2 = st.columns([1, 1])
-                    with b1:
-                        st.link_button("Koda Git ↗", acc['code_link'], type="primary", use_container_width=True)
-                    with b2:
-                        if st.button("Sil 🗑️", key=f"ap_del_{idx}", use_container_width=True):
-                            db["approved_accounts"].pop(idx)
-                            save_all_data(db)
-                            safe_rerun()
-
-    with t_bekleyen:
-        if not db["pending_accounts"]:
-            st.info("Onay bekleyen istek yok.")
-        else:
-            for idx, acc in enumerate(db["pending_accounts"]):
-                title = f"TALEP: {acc['platform']} ({acc['added_by']})"
-                with st.expander(title):
-                    st.write(f"**Oyunlar:** {acc['games']}")
-                    st.write(f"**Kullanici:** `{acc['username']}`")
-                    st.write(f"**Sifre:** `{acc['password']}`")
-                    st.write(f"**Link:** {acc['code_link']}")
-                    
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    bo, br = st.columns([1, 1])
-                    with bo:
-                        if st.button("Onayla 🟢", key=f"ok_{idx}", use_container
+                with st.expander(f"{acc['platform']} - {acc['username']}"):
+                    st.write
