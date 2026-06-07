@@ -3,7 +3,7 @@ import json
 import os
 
 st.set_page_config(page_title="Oyunlar", page_icon="🎮", layout="wide")
-DATA_FILE = 'games_v3.json'
+DATA_FILE = 'games_v4.json'
 
 def safe_rerun():
     if hasattr(st, "rerun"): st.rerun()
@@ -67,16 +67,53 @@ with c_t2:
 is_admin = (st.session_state.username == "admin")
 with c_t1: st.title(f"🎮 Hos geldin, {st.session_state.username}")
 
-# --- ANA GOVDE ---
-col1, col2 = st.columns([1, 2])
+# --- EN USTTE FORM ---
+st.markdown("### ➕ Yeni Oyun Oner")
+with st.form("add_game_form"):
+    g_name = st.text_input("Oyun Adi")
+    g_plat = st.text_input("Platform (Orn: Steam, Epic)")
+    g_link = st.text_input("Steam / Magaza Linki")
+    g_price = st.text_input("Fiyati (Orn: 15$, Bedava)")
+    g_rate = st.slider("Oynanirlik Durumu (Puan)", 1, 10, 8)
+    g_note = st.text_area("Oyun Hakkindaki Yorumun")
+    submit_btn = st.form_submit_button("Oneriyi Herkesle Paylas", use_container_width=True)
+    
+if submit_btn:
+    if g_name and g_link:
+        new_game = {
+            "name": g_name, 
+            "platform": g_plat if g_plat else "Steam", 
+            "link": g_link, 
+            "price": g_price if g_price else "Belirtilmedi", 
+            "rating": g_rate, 
+            "note": g_note if g_note else "Not yok.", 
+            "by": st.session_state.username
+        }
+        db["games"].append(new_game)
+        save_data(db)
+        st.success("Oyun başarıyla eklendi! Aşağıdaki ortak listeye düştü.")
+        safe_rerun()
+    else: st.error("Oyun Adi ve Link alanları zorunludur!")
 
-with col1:
-    st.subheader("➕ Yeni Oyun Oner")
-    with st.form("add_game_form"):
-        g_name = st.text_input("Oyun Adi")
-        g_plat = st.text_input("Platform (Orn: Steam, Epic)")
-        g_link = st.text_input("Steam / Magaza Linki")
-        g_price = st.text_input("Fiyati (Orn: 15$, Bedava)")
-        g_rate = st.slider("Oynanirlik Durumu (Puan)", 1, 10, 8)
-        g_note = st.text_area("Oyun Hakkindaki Yorumun")
-        submit_btn = st.form_submit_button("Oneriyi Paylas", use_container_width=True)
+st.markdown("---")
+
+# --- ALTTA ORTAK LISTE ---
+st.markdown("### 📋 Paylasilan Ortak Oyun Onerileri (Herkes Gorebilir)")
+if not db["games"]: 
+    st.info("Henüz ortak havuza oyun eklenmemiş. İlk öneriyi yukarıdan sen yap!")
+else:
+    for idx, game in enumerate(reversed(db["games"])):
+        real_idx = len(db["games"]) - 1 - idx
+        with st.expander(f"🎮 {game['name']} ({game['platform']}) - [Ekleyen: {game['by']}]"):
+            st.write(f"**💰 Fiyat:** {game['price']} | **⭐️ Puan:** {game['rating']}/10")
+            st.write(f"**📝 Yorum:** {game['note']}")
+            
+            b1, b2 = st.columns([2, 1])
+            with b1: 
+                st.link_button("Oyuna Git ↗", game['link'], use_container_width=True)
+            with b2:
+                if is_admin or game['by'] == st.session_state.username:
+                    if st.button("Sil 🗑️", key=f"del_{real_idx}", use_container_width=True):
+                        db["games"].pop(real_idx)
+                        save_data(db)
+                        safe_rerun()
